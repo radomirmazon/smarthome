@@ -2,10 +2,10 @@
 ## Features
 
 Base on ESP8266 and MQTT communication
-40 digital input
-16 digital output
-1 LED status indicator 
-And thats all...
+- 40 digital input
+- 16 digital output
+- 1 LED status indicator 
+- And thats all...
 
 ## HA automation cofig for digital input setting up.
 
