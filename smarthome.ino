@@ -1,10 +1,10 @@
-#include <pcf8574.h>
 #include <Wire.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include "switch-module.h"
 #include "sensor-module.h"
-#include "mqtt-module.h"
+#include "sensor-module2.h"
+#include "shared/mqtt_module.h"
 #include "config.h"
 #include "logger.h"
 
@@ -12,30 +12,37 @@
 Config config;
 Logger logger;
 WiFiClient espClient;
-MqttModule* pMqtt = new MqttModule(&espClient, &config);
+MqttModule* pMqtt = new MqttModule(&espClient, 
+    config.mqtt_broker,
+    config.mqtt_port,
+    config.mqtt_username,
+    config.mqtt_password,
+    config.mgtt_topic,
+    &logger);
 
-SensorModule sensor0(0x20, 0, false, pMqtt, &config, &logger);
-SensorModule sensor1(0x21, 1, false, pMqtt, &config, &logger);
-SensorModule sensor2(0x22, 2, false, pMqtt, &config, &logger);
-SensorModule sensor3(0x23, 3, false, pMqtt, &config, &logger);
-SensorModule sensor4(0x24, 4, false, pMqtt, &config, &logger);
-SwitchModule switch0(0x26, 0, true, pMqtt, &config, &logger);
-SwitchModule switch1(0x27, 1, true, pMqtt, &config, &logger);
+//SensorModule sensor0(0x20, 0, false, pMqtt, &config, &logger);
+//SensorModule sensor1(0x21, 1, false, pMqtt, &config, &logger);
+//SensorModule sensor2(0x22, 2, false, pMqtt, &config, &logger);
+//SensorModule sensor3(0x23, 3, false, pMqtt, &config, &logger);
+//SensorModule sensor4(0x24, 4, false, pMqtt, &config, &logger);
+SensorModule2 sensor4(0x24, 4, false, pMqtt, &config, &logger);
+SwitchModule switch0(0x25, 0, true, pMqtt, &config, &logger);
+SwitchModule switch1(0x26, 1, true, pMqtt, &config, &logger);
 
 void ICACHE_RAM_ATTR isr0() {
-  sensor0.isrFlag = true;
+  //sensor0.isrFlag = true;
 }
 
 void ICACHE_RAM_ATTR isr1() {
-  sensor1.isrFlag = true;
+  //sensor1.isrFlag = true;
 }
 
 void ICACHE_RAM_ATTR isr2() {
-  sensor2.isrFlag = true;
+  //sensor2.isrFlag = true;
 }
 
 void ICACHE_RAM_ATTR isr3() {
-  sensor3.isrFlag = true;
+  //sensor3.isrFlag = true;
 }
 
 void ICACHE_RAM_ATTR isr4() {
@@ -46,7 +53,7 @@ void ICACHE_RAM_ATTR isr4() {
 
 void setup()
 {
-  //Serial.begin(9600);
+  Serial.begin(9600);
   Serial.println("\nHello\n");
   logger.begin();
   delay(200);
@@ -58,11 +65,12 @@ void setup()
   pMqtt->begin();
   switch0.begin();
   switch1.begin();
-  sensor0.begin();
-  sensor1.begin();
-  sensor2.begin();
-  sensor3.begin();
+  //sensor0.begin();
+  //sensor1.begin();
+  //sensor2.begin();
+  //sensor3.begin();
   sensor4.begin();
+
   //setup interrupts for sensors:
   /**
   attachInterrupt(digitalPinToInterrupt(GPIO), ISR, mode);
@@ -113,10 +121,10 @@ void loop()
   pMqtt->loop();
   switch0.loop();
   switch1.loop();
-  sensor0.loop();
-  sensor1.loop();
-  sensor2.loop();
-  sensor3.loop();
+  //sensor0.loop();
+  //sensor1.loop();
+  //sensor2.loop();
+  //sensor3.loop();
   sensor4.loop();
   logger.loop();
 }

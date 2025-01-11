@@ -13,6 +13,7 @@ class TopicParser {
     }
 
     int getCommandAddressTopic(char* topic) {
+
       String startWith = String("command/") + String(pConfig->mgtt_topic) 
                             + String("/relay/");
       if(strncmp(topic, startWith.c_str(), startWith.length()) != 0) {

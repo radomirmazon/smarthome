@@ -2,21 +2,24 @@
 #define Switch_Module_h
 
 #include <stdlib.h>
-#include <pcf8574.h>
-#include "mqtt-module.h"
+#include "lib/pcf8574.h"
+#include "shared/mqtt_module.h"
 #include "config.h"
 #include "topic-parser.h"
 #include "logger.h"
+#include "switch.h"
+#include "switchSetter.h"
 
-class SwitchModule {
+class SwitchModule :public SwitchSetter {
   private:
     uint8_t logicAddress; 
     Config* pConfig;
     PCF8574 * pExpander;
     bool isRevert;
     MqttModule* pMqtt;
-    TopicParser* pTopicParser;
     Logger* pLog;
+    Switch* switches[8];
+
 
   public:
     SwitchModule(uint8_t address, uint8_t logicAddress, bool isRevert, MqttModule* pMqtt, Config* pConfig, Logger* pLog) {
@@ -24,87 +27,32 @@ class SwitchModule {
       this->pConfig = pConfig;
       this->pMqtt = pMqtt;
       this->isRevert = isRevert;
-      this->pTopicParser = new TopicParser(pConfig);
       this->pLog = pLog;
       pExpander = new PCF8574(address);
     }
 
     void begin() {
-      for (int i=0; i<8; i++) {
+      for (uint8_t i=0; i<8; i++) {
         pinMode(*pExpander, i, OUTPUT);
         setPort(i, LOW);
       }
-      pMqtt->registeSubscribers([this](PubSubClient* subProvider) {
-        char buff[50];
-        for (int i=0; i<8; i++) {
-          sprintf(buff, pConfig->mqtt_topic_command_relay, pConfig->mgtt_topic, 8*logicAddress + i);
-          subProvider->subscribe(buff);
-          Serial.print("Subscribe topic: ");
-          Serial.println(buff);
-        }
-      });
-      pMqtt->registeCallback([this](char* topic, uint8_t* message, 
-                              unsigned int length, PubSubClient* pMqttClient) 
-      {
-        int address = pTopicParser->getCommandAddressTopic(topic);
-        int pinNumber = decodeAddress(address);
-        if (pinNumber == -1) {
-          return;
-        }
-
-        Serial.print("Wiadomosc odebrana: ");
-        Serial.print(topic);
-        Serial.print(". Message: ");
-
-        String messageTemp;
-        for (int i=0; i<length; i++) {
-          Serial.print((char) message[i]);
-          messageTemp += (char) message[i];
-        }
-        Serial.println();
-        
-        Serial.println("Address: " + String(address));
-        Serial.println("Pin: " + String(pinNumber));
-
-        char buff[50];
-        sprintf(buff, pConfig->mqtt_topic_state_relay, pConfig->mgtt_topic, address);
-        
-        Serial.print("Changing output to ");
-        if(messageTemp == pConfig->state_on) {
-          Serial.println("on");
-          setPort(pinNumber, true);
-          pMqttClient->publish(buff, pConfig->state_on, true);
-        }
-        else if(messageTemp == pConfig->state_off) {
-          Serial.println("off");
-          setPort(pinNumber, false);
-          pMqttClient->publish(buff, pConfig->state_off, true);
-        }
-
-        pLog->setBlinkOnce();
-        
-      });
+      char buffer[5];
+      for (uint8_t i=0; i<8; i++) {
+        switches[i] = new Switch(itoa(decodeAddress(i), buffer, 10), pConfig, pMqtt, this, i);
+        switches[i]->begin();
+      }
     }
 
-    int decodeAddress(int address) {
-      if (address == -1 ) {
-        return -1;
-      }
-      int p = address/8;
-      if (logicAddress != p) {
-        return -1;
-      }
-
-      return address%8;
+    uint8_t decodeAddress(uint8_t address) {
+      return logicAddress*8 + address;
     }
 
     void loop() {
-      
     }
 
-  private:
     void setPort(int index, bool state) {
       digitalWrite(*pExpander, index, isRevert ^ state );
+      pLog->setBlinkOnce();
     }
   
 };

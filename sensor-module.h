@@ -2,8 +2,8 @@
 #define Sensor_Module_h
 
 #include <stdlib.h>
-#include <pcf8574.h>
-#include "mqtt-module.h"
+#include "lib/pcf8574.h"
+#include "shared/mqtt_module.h"
 #include "config.h"
 #include "topic-parser.h"
 #include "logger.h"
@@ -74,6 +74,7 @@ class SensorModule {
         }
       }
     }
+    
     void sendState(int i, int state) {
       char buff[50];
       sprintf(buff, pConfig->mqtt_topic_state_sensor, pConfig->mgtt_topic, 8*logicAddress + i);
